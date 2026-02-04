@@ -358,101 +358,104 @@ export default function ChatWidget() {
         @media (max-width: 480px) {
           .chat-window {
             position: fixed;
-            width: calc(100vw - 20px);
-            height: auto;
-            max-height: 50vh;
-            bottom: 70px;
-            right: 10px;
-            left: 10px;
-            border-radius: 10px;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh; /* Dynamic viewport height for iOS */
+            border-radius: 0;
             display: flex;
             flex-direction: column;
+            z-index: 9999;
           }
 
           .chat-trigger {
-            width: 46px;
-            height: 46px;
-            bottom: 16px;
-            right: 10px;
+            width: 50px;
+            height: 50px;
+            bottom: 20px;
+            right: 16px;
           }
 
           .chat-header {
-            padding: 10px 12px;
+            padding: 12px 16px;
+            padding-top: max(12px, env(safe-area-inset-top));
             flex-shrink: 0;
           }
 
           .chat-header-info {
-            gap: 8px;
+            gap: 10px;
           }
 
           .chat-avatar {
-            width: 28px;
-            height: 28px;
-            font-size: 12px;
+            width: 36px;
+            height: 36px;
+            font-size: 14px;
           }
 
           .chat-title {
-            font-size: 13px;
+            font-size: 16px;
           }
 
           .chat-status {
-            font-size: 10px;
+            font-size: 12px;
           }
 
           .chat-messages {
-            padding: 10px;
-            gap: 8px;
+            padding: 12px 16px;
+            gap: 10px;
             flex: 1;
-            min-height: 100px;
-            max-height: 200px;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
           }
 
           .message-avatar {
-            width: 22px;
-            height: 22px;
-            font-size: 10px;
+            width: 28px;
+            height: 28px;
+            font-size: 12px;
           }
 
           .message-content {
-            padding: 6px 10px;
-            font-size: 12px;
-            line-height: 1.4;
+            padding: 10px 14px;
+            font-size: 15px;
+            line-height: 1.5;
           }
 
           .message-content p {
-            margin: 0 0 4px 0;
+            margin: 0 0 6px 0;
           }
 
           .chat-input-container {
-            padding: 8px 10px;
+            padding: 12px 16px;
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
             flex-shrink: 0;
           }
 
           .chat-input-container input {
-            padding: 8px 10px;
+            padding: 12px 14px;
             font-size: 16px; /* Prevents iOS zoom on focus */
           }
 
           .chat-send {
-            width: 36px;
-            height: 36px;
+            width: 44px;
+            height: 44px;
           }
 
           .chat-pin-input {
-            padding: 8px 10px;
+            padding: 12px 16px;
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
             flex-shrink: 0;
           }
 
           .chat-pin-input input {
-            padding: 8px;
+            padding: 12px;
             font-size: 16px; /* Prevents iOS zoom */
           }
 
           .chat-pin-input button {
-            padding: 8px 12px;
-            font-size: 12px;
+            padding: 12px 16px;
+            font-size: 14px;
           }
         }
 
