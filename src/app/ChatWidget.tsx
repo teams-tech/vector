@@ -15,7 +15,7 @@ interface ChatState {
   role: string;
 }
 
-const CHAT_API_URL = process.env.NEXT_PUBLIC_CHAT_API_URL || 'https://blackbriar.autosolutionsnm.com/chat';
+const CHAT_API_URL = process.env.NEXT_PUBLIC_CHAT_API_URL || 'https://hubspot-mcp-server.jason-b54.workers.dev/chat';
 
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -357,10 +357,66 @@ export default function ChatWidget() {
 
         @media (max-width: 480px) {
           .chat-window {
-            width: calc(100vw - 32px);
-            height: calc(100vh - 140px);
-            bottom: 88px;
-            right: 16px;
+            width: calc(100vw - 24px);
+            height: 60vh;
+            max-height: 450px;
+            bottom: 80px;
+            right: 12px;
+            border-radius: 12px;
+          }
+
+          .chat-trigger {
+            width: 50px;
+            height: 50px;
+            bottom: 20px;
+            right: 12px;
+          }
+
+          .chat-header {
+            padding: 12px 14px;
+          }
+
+          .chat-avatar {
+            width: 34px;
+            height: 34px;
+            font-size: 14px;
+          }
+
+          .chat-title {
+            font-size: 14px;
+          }
+
+          .chat-messages {
+            padding: 12px;
+            gap: 10px;
+          }
+
+          .message-content {
+            padding: 8px 12px;
+            font-size: 13px;
+          }
+
+          .chat-input-container {
+            padding: 10px 12px;
+          }
+
+          .chat-input-container input {
+            padding: 10px 12px;
+            font-size: 16px; /* Prevents iOS zoom on focus */
+          }
+
+          .chat-send {
+            width: 40px;
+            height: 40px;
+          }
+
+          .chat-pin-input {
+            padding: 10px 12px;
+          }
+
+          .chat-pin-input input {
+            padding: 10px;
+            font-size: 16px; /* Prevents iOS zoom */
           }
         }
 
