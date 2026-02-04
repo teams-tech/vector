@@ -357,66 +357,91 @@ export default function ChatWidget() {
 
         @media (max-width: 480px) {
           .chat-window {
-            width: calc(100vw - 24px);
-            height: 60vh;
-            max-height: 450px;
-            bottom: 80px;
-            right: 12px;
-            border-radius: 12px;
+            width: calc(100vw - 20px);
+            height: 45vh;
+            max-height: 320px;
+            bottom: 70px;
+            right: 10px;
+            left: 10px;
+            border-radius: 10px;
           }
 
           .chat-trigger {
-            width: 50px;
-            height: 50px;
-            bottom: 20px;
-            right: 12px;
+            width: 46px;
+            height: 46px;
+            bottom: 16px;
+            right: 10px;
           }
 
           .chat-header {
-            padding: 12px 14px;
+            padding: 10px 12px;
+          }
+
+          .chat-header-info {
+            gap: 8px;
           }
 
           .chat-avatar {
-            width: 34px;
-            height: 34px;
-            font-size: 14px;
+            width: 28px;
+            height: 28px;
+            font-size: 12px;
           }
 
           .chat-title {
-            font-size: 14px;
-          }
-
-          .chat-messages {
-            padding: 12px;
-            gap: 10px;
-          }
-
-          .message-content {
-            padding: 8px 12px;
             font-size: 13px;
           }
 
+          .chat-status {
+            font-size: 10px;
+          }
+
+          .chat-messages {
+            padding: 10px;
+            gap: 8px;
+          }
+
+          .message-avatar {
+            width: 22px;
+            height: 22px;
+            font-size: 10px;
+          }
+
+          .message-content {
+            padding: 6px 10px;
+            font-size: 12px;
+            line-height: 1.4;
+          }
+
+          .message-content p {
+            margin: 0 0 4px 0;
+          }
+
           .chat-input-container {
-            padding: 10px 12px;
+            padding: 8px 10px;
           }
 
           .chat-input-container input {
-            padding: 10px 12px;
+            padding: 8px 10px;
             font-size: 16px; /* Prevents iOS zoom on focus */
           }
 
           .chat-send {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
           }
 
           .chat-pin-input {
-            padding: 10px 12px;
+            padding: 8px 10px;
           }
 
           .chat-pin-input input {
-            padding: 10px;
+            padding: 8px;
             font-size: 16px; /* Prevents iOS zoom */
+          }
+
+          .chat-pin-input button {
+            padding: 8px 12px;
+            font-size: 12px;
           }
         }
 
