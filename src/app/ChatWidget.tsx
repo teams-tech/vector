@@ -46,6 +46,22 @@ export default function ChatWidget() {
     }
   }, [isOpen]);
 
+  // Handle iOS keyboard - scroll to bottom when input focused
+  useEffect(() => {
+    const handleFocus = () => {
+      // Small delay to let iOS keyboard fully open
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 300);
+    };
+
+    const input = inputRef.current;
+    if (input) {
+      input.addEventListener('focus', handleFocus);
+      return () => input.removeEventListener('focus', handleFocus);
+    }
+  }, [isOpen]);
+
   // Initialize chat with welcome message
   useEffect(() => {
     if (isOpen && messages.length === 0) {
@@ -363,8 +379,9 @@ export default function ChatWidget() {
             right: 0;
             bottom: 0;
             width: 100vw;
-            height: 100vh;
+            height: 100%;
             height: 100dvh; /* Dynamic viewport height for iOS */
+            max-height: -webkit-fill-available; /* iOS Safari keyboard handling */
             border-radius: 0;
             display: flex;
             flex-direction: column;
@@ -382,6 +399,7 @@ export default function ChatWidget() {
             padding: 12px 16px;
             padding-top: max(12px, env(safe-area-inset-top));
             flex-shrink: 0;
+            min-height: 60px;
           }
 
           .chat-header-info {
@@ -406,6 +424,7 @@ export default function ChatWidget() {
             padding: 12px 16px;
             gap: 10px;
             flex: 1;
+            min-height: 0; /* Important for flex overflow */
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
           }
@@ -430,6 +449,7 @@ export default function ChatWidget() {
             padding: 12px 16px;
             padding-bottom: max(12px, env(safe-area-inset-bottom));
             flex-shrink: 0;
+            background: #111;
           }
 
           .chat-input-container input {
