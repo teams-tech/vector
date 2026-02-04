@@ -1,0 +1,17 @@
+{
+  "name": "TEAMS Technology — Mia",
+  "short_name": "Mia",
+  "description": "TEAMS Technology Voice Assistant",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
