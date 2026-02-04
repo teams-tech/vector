@@ -357,13 +357,16 @@ export default function ChatWidget() {
 
         @media (max-width: 480px) {
           .chat-window {
+            position: fixed;
             width: calc(100vw - 20px);
-            height: 45vh;
-            max-height: 320px;
+            height: auto;
+            max-height: 50vh;
             bottom: 70px;
             right: 10px;
             left: 10px;
             border-radius: 10px;
+            display: flex;
+            flex-direction: column;
           }
 
           .chat-trigger {
@@ -375,6 +378,7 @@ export default function ChatWidget() {
 
           .chat-header {
             padding: 10px 12px;
+            flex-shrink: 0;
           }
 
           .chat-header-info {
@@ -398,6 +402,11 @@ export default function ChatWidget() {
           .chat-messages {
             padding: 10px;
             gap: 8px;
+            flex: 1;
+            min-height: 100px;
+            max-height: 200px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
           }
 
           .message-avatar {
@@ -418,6 +427,7 @@ export default function ChatWidget() {
 
           .chat-input-container {
             padding: 8px 10px;
+            flex-shrink: 0;
           }
 
           .chat-input-container input {
@@ -432,6 +442,7 @@ export default function ChatWidget() {
 
           .chat-pin-input {
             padding: 8px 10px;
+            flex-shrink: 0;
           }
 
           .chat-pin-input input {
