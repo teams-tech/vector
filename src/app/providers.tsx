@@ -1,11 +1,7 @@
 'use client';
 
-import { ConversationProvider } from '@elevenlabs/react';
-
+// ElevenLabs v1.0 no longer requires ConversationProvider
+// The useConversation hook works directly without a context wrapper
 export function Providers({ children }: { children: React.ReactNode }) {
-  return (
-    <ConversationProvider>
-      {children}
-    </ConversationProvider>
-  );
+  return <>{children}</>;
 }
