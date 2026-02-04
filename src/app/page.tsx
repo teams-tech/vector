@@ -1,6 +1,7 @@
 import dynamic from 'next/dynamic';
 
 const MiaWidget = dynamic(() => import('./MiaWidget'), { ssr: false });
+const ChatWidget = dynamic(() => import('./ChatWidget'), { ssr: false });
 
 export default function Home() {
   return (
@@ -455,6 +456,8 @@ export default function Home() {
         }
       `}</style>
 
+      {/* Floating Chat Widget */}
+      <ChatWidget />
     </>
   );
 }
