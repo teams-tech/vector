@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import styles from './ChatWidget.module.css';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -220,7 +221,7 @@ export default function ChatWidget() {
       {/* Floating Chat Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="chat-trigger"
+        className={styles['chat-trigger']}
         aria-label={isOpen ? 'Close chat' : 'Open chat'}
       >
         {isOpen ? (
@@ -237,25 +238,25 @@ export default function ChatWidget() {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="chat-window">
+        <div className={styles['chat-window']}>
           {/* Header */}
-          <div className="chat-header">
-            <div className="chat-header-info">
-              <div className="chat-avatar">M</div>
+          <div className={styles['chat-header']}>
+            <div className={styles['chat-header-info']}>
+              <div className={styles['chat-avatar']}>M</div>
               <div>
-                <div className="chat-title">Chat with Mia</div>
-                <div className="chat-status">
+                <div className={styles['chat-title']}>Chat with Mia</div>
+                <div className={styles['chat-status']}>
                   {chatState.verified ? (
-                    <span className="status-verified">{chatState.role} access</span>
+                    <span className={styles['status-verified']}>{chatState.role} access</span>
                   ) : chatState.identifier ? (
-                    <span className="status-identified">Identified</span>
+                    <span className={styles['status-identified']}>Identified</span>
                   ) : (
-                    <span className="status-anonymous">Anonymous</span>
+                    <span className={styles['status-anonymous']}>Anonymous</span>
                   )}
                 </div>
               </div>
             </div>
-            <button onClick={() => setIsOpen(false)} className="chat-close">
+            <button onClick={() => setIsOpen(false)} className={styles['chat-close']}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
@@ -264,16 +265,16 @@ export default function ChatWidget() {
           </div>
 
           {/* Messages */}
-          <div className="chat-messages">
+          <div className={styles['chat-messages']}>
             {messages.map((msg, i) => (
               <div
                 key={i}
-                className={`chat-message chat-message-${msg.role}`}
+                className={`${styles['chat-message']} ${styles[`chat-message-${msg.role}`]}`}
               >
                 {msg.role === 'assistant' && (
-                  <div className="message-avatar">M</div>
+                  <div className={styles['message-avatar']}>M</div>
                 )}
-                <div className="message-content">
+                <div className={styles['message-content']}>
                   {msg.content.split('\n').map((line, j) => (
                     <p key={j}>{line}</p>
                   ))}
@@ -281,9 +282,9 @@ export default function ChatWidget() {
               </div>
             ))}
             {isLoading && (
-              <div className="chat-message chat-message-assistant">
-                <div className="message-avatar">M</div>
-                <div className="message-content typing">
+              <div className={`${styles['chat-message']} ${styles['chat-message-assistant']}`}>
+                <div className={styles['message-avatar']}>M</div>
+                <div className={`${styles['message-content']} ${styles.typing}`}>
                   <span></span><span></span><span></span>
                 </div>
               </div>
@@ -293,7 +294,7 @@ export default function ChatWidget() {
 
           {/* PIN Input (shown when needed) */}
           {showPinInput && (
-            <div className="chat-pin-input">
+            <div className={styles['chat-pin-input']}>
               <input
                 type="password"
                 inputMode="numeric"
@@ -308,14 +309,14 @@ export default function ChatWidget() {
               <button onClick={verifyPin} disabled={isLoading || pinValue.length !== 6}>
                 Verify
               </button>
-              <button onClick={() => setShowPinInput(false)} className="pin-skip">
+              <button onClick={() => setShowPinInput(false)} className={styles['pin-skip']}>
                 Skip
               </button>
             </div>
           )}
 
           {/* Input */}
-          <div className="chat-input-container">
+          <div className={styles['chat-input-container']}>
             <input
               ref={inputRef}
               type="text"
@@ -328,7 +329,7 @@ export default function ChatWidget() {
             <button
               onClick={() => sendMessage(inputValue)}
               disabled={isLoading || !inputValue.trim()}
-              className="chat-send"
+              className={styles['chat-send']}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="22" y1="2" x2="11" y2="13" />
@@ -338,442 +339,6 @@ export default function ChatWidget() {
           </div>
         </div>
       )}
-
-      <style>{`
-        .chat-trigger {
-          position: fixed;
-          bottom: 24px;
-          right: 24px;
-          width: 56px;
-          height: 56px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
-          border: 1px solid #333;
-          color: #fff;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 4px 20px rgba(196, 30, 58, 0.2);
-          transition: all 0.3s ease;
-          z-index: 1000;
-        }
-
-        .chat-trigger:hover {
-          border-color: #c41e3a;
-          box-shadow: 0 6px 30px rgba(196, 30, 58, 0.3);
-          transform: scale(1.05);
-        }
-
-        .chat-window {
-          position: fixed;
-          bottom: 96px;
-          right: 24px;
-          width: 420px;
-          height: calc(100vh - 120px);
-          max-height: 800px;
-          background: #0d0d0d;
-          border: 1px solid #222;
-          border-radius: 16px;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
-          z-index: 1000;
-        }
-
-        @media (max-width: 480px) {
-          .chat-window {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            width: 100vw;
-            height: 100%;
-            height: 100dvh; /* Dynamic viewport height for iOS */
-            max-height: -webkit-fill-available; /* iOS Safari keyboard handling */
-            border-radius: 0;
-            display: flex;
-            flex-direction: column;
-            z-index: 9999;
-          }
-
-          .chat-trigger {
-            width: 50px;
-            height: 50px;
-            bottom: 20px;
-            right: 16px;
-          }
-
-          .chat-header {
-            padding: 12px 16px;
-            padding-top: max(12px, env(safe-area-inset-top));
-            flex-shrink: 0;
-            min-height: 60px;
-          }
-
-          .chat-header-info {
-            gap: 10px;
-          }
-
-          .chat-avatar {
-            width: 36px;
-            height: 36px;
-            font-size: 14px;
-          }
-
-          .chat-title {
-            font-size: 16px;
-          }
-
-          .chat-status {
-            font-size: 12px;
-          }
-
-          .chat-messages {
-            padding: 12px 16px;
-            gap: 10px;
-            flex: 1;
-            min-height: 0; /* Important for flex overflow */
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-          }
-
-          .message-avatar {
-            width: 28px;
-            height: 28px;
-            font-size: 12px;
-          }
-
-          .message-content {
-            padding: 10px 14px;
-            font-size: 15px;
-            line-height: 1.5;
-          }
-
-          .message-content p {
-            margin: 0 0 6px 0;
-          }
-
-          .chat-input-container {
-            padding: 12px 16px;
-            padding-bottom: max(12px, env(safe-area-inset-bottom));
-            flex-shrink: 0;
-            background: #111;
-          }
-
-          .chat-input-container input {
-            padding: 12px 14px;
-            font-size: 16px; /* Prevents iOS zoom on focus */
-          }
-
-          .chat-send {
-            width: 44px;
-            height: 44px;
-          }
-
-          .chat-pin-input {
-            padding: 12px 16px;
-            padding-bottom: max(12px, env(safe-area-inset-bottom));
-            flex-shrink: 0;
-          }
-
-          .chat-pin-input input {
-            padding: 12px;
-            font-size: 16px; /* Prevents iOS zoom */
-          }
-
-          .chat-pin-input button {
-            padding: 12px 16px;
-            font-size: 14px;
-          }
-        }
-
-        .chat-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 16px;
-          background: linear-gradient(180deg, #151515 0%, #0d0d0d 100%);
-          border-bottom: 1px solid #222;
-        }
-
-        .chat-header-info {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .chat-avatar {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #c41e3a 0%, #8b1528 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 600;
-          font-size: 16px;
-          color: #fff;
-        }
-
-        .chat-title {
-          font-weight: 600;
-          color: #fff;
-          font-size: 15px;
-        }
-
-        .chat-status {
-          font-size: 12px;
-          margin-top: 2px;
-        }
-
-        .status-verified {
-          color: #4ade80;
-        }
-
-        .status-identified {
-          color: #fbbf24;
-        }
-
-        .status-anonymous {
-          color: #666;
-        }
-
-        .chat-close {
-          background: none;
-          border: none;
-          color: #666;
-          cursor: pointer;
-          padding: 4px;
-          transition: color 0.2s;
-        }
-
-        .chat-close:hover {
-          color: #fff;
-        }
-
-        .chat-messages {
-          flex: 1;
-          overflow-y: auto;
-          padding: 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-
-        .chat-message {
-          display: flex;
-          gap: 8px;
-          max-width: 85%;
-          animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        .chat-message-user {
-          align-self: flex-end;
-          flex-direction: row-reverse;
-        }
-
-        .chat-message-assistant {
-          align-self: flex-start;
-        }
-
-        .chat-message-system {
-          align-self: center;
-          max-width: 90%;
-        }
-
-        .message-avatar {
-          width: 28px;
-          height: 28px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #c41e3a 0%, #8b1528 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 12px;
-          font-weight: 600;
-          color: #fff;
-          flex-shrink: 0;
-        }
-
-        .message-content {
-          padding: 10px 14px;
-          border-radius: 12px;
-          font-size: 14px;
-          line-height: 1.5;
-        }
-
-        .chat-message-user .message-content {
-          background: linear-gradient(135deg, #1e3a5f 0%, #162d4d 100%);
-          color: #e0e0e0;
-          border-bottom-right-radius: 4px;
-        }
-
-        .chat-message-assistant .message-content {
-          background: linear-gradient(135deg, #1a1a1a 0%, #151515 100%);
-          color: #c0c0c0;
-          border: 1px solid #252525;
-          border-bottom-left-radius: 4px;
-        }
-
-        .chat-message-system .message-content {
-          background: #1a1a1a;
-          color: #888;
-          font-size: 13px;
-          text-align: center;
-          border: 1px solid #333;
-        }
-
-        .message-content p {
-          margin: 0 0 8px 0;
-        }
-
-        .message-content p:last-child {
-          margin-bottom: 0;
-        }
-
-        .typing {
-          display: flex;
-          gap: 4px;
-          padding: 14px 18px;
-        }
-
-        .typing span {
-          width: 8px;
-          height: 8px;
-          background: #444;
-          border-radius: 50%;
-          animation: typing 1.2s infinite;
-        }
-
-        .typing span:nth-child(2) { animation-delay: 0.2s; }
-        .typing span:nth-child(3) { animation-delay: 0.4s; }
-
-        @keyframes typing {
-          0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-          30% { transform: translateY(-4px); opacity: 1; }
-        }
-
-        .chat-pin-input {
-          display: flex;
-          gap: 8px;
-          padding: 12px 16px;
-          background: #111;
-          border-top: 1px solid #222;
-        }
-
-        .chat-pin-input input {
-          flex: 1;
-          background: #1a1a1a;
-          border: 1px solid #333;
-          border-radius: 8px;
-          padding: 10px 12px;
-          color: #fff;
-          font-size: 14px;
-          letter-spacing: 4px;
-          text-align: center;
-        }
-
-        .chat-pin-input input:focus {
-          outline: none;
-          border-color: #c41e3a;
-        }
-
-        .chat-pin-input button {
-          padding: 10px 16px;
-          background: linear-gradient(135deg, #c41e3a 0%, #8b1528 100%);
-          border: none;
-          border-radius: 8px;
-          color: #fff;
-          font-weight: 500;
-          cursor: pointer;
-          transition: opacity 0.2s;
-        }
-
-        .chat-pin-input button:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .chat-pin-input .pin-skip {
-          background: #333;
-        }
-
-        .chat-input-container {
-          display: flex;
-          gap: 8px;
-          padding: 12px 16px;
-          background: #111;
-          border-top: 1px solid #222;
-        }
-
-        .chat-input-container input {
-          flex: 1;
-          background: #1a1a1a;
-          border: 1px solid #333;
-          border-radius: 8px;
-          padding: 12px 14px;
-          color: #fff;
-          font-size: 14px;
-        }
-
-        .chat-input-container input:focus {
-          outline: none;
-          border-color: #444;
-        }
-
-        .chat-input-container input::placeholder {
-          color: #555;
-        }
-
-        .chat-send {
-          width: 44px;
-          height: 44px;
-          background: linear-gradient(135deg, #c41e3a 0%, #8b1528 100%);
-          border: none;
-          border-radius: 8px;
-          color: #fff;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: opacity 0.2s;
-        }
-
-        .chat-send:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .chat-send:not(:disabled):hover {
-          opacity: 0.9;
-        }
-
-        /* Scrollbar */
-        .chat-messages::-webkit-scrollbar {
-          width: 6px;
-        }
-
-        .chat-messages::-webkit-scrollbar-track {
-          background: transparent;
-        }
-
-        .chat-messages::-webkit-scrollbar-thumb {
-          background: #333;
-          border-radius: 3px;
-        }
-
-        .chat-messages::-webkit-scrollbar-thumb:hover {
-          background: #444;
-        }
-      `}</style>
     </>
   );
 }
