@@ -41,4 +41,5 @@ npm run perf:baseline:report
 ## Notes
 
 - The route-level value is an estimate derived from Next build manifests.
+- Next build-id-specific file names are normalized in the report to reduce churn between equivalent builds.
 - This step does not change runtime behavior; it adds measurement and optional budget enforcement only.

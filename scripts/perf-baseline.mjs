@@ -19,6 +19,15 @@ function isJavaScriptFile(filePath) {
   return JS_EXTENSIONS.has(path.extname(filePath));
 }
 
+function normalizeAssetPath(filePath) {
+  const buildManifestMatch = filePath.match(/^static\/[^/]+\/(_(?:build|ssg)Manifest\.js)$/);
+  if (buildManifestMatch) {
+    return `static/<build-id>/${buildManifestMatch[1]}`;
+  }
+
+  return filePath;
+}
+
 function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -92,17 +101,19 @@ async function collectClientAssets() {
     throw new Error('Missing .next/static directory. Run "npm run build" first.');
   }
 
-  const clientJsAssets = [];
+  const clientJsAssetMap = new Map();
   for (const filePath of files) {
     if (!isJavaScriptFile(filePath)) {
       continue;
     }
 
     const stats = await fs.stat(filePath);
-    const relativePath = toPosixPath(path.relative(NEXT_DIR, filePath));
-    clientJsAssets.push({ file: relativePath, bytes: stats.size });
+    const relativePath = normalizeAssetPath(toPosixPath(path.relative(NEXT_DIR, filePath)));
+    const existing = clientJsAssetMap.get(relativePath) ?? 0;
+    clientJsAssetMap.set(relativePath, existing + stats.size);
   }
 
+  const clientJsAssets = [...clientJsAssetMap.entries()].map(([file, bytes]) => ({ file, bytes }));
   clientJsAssets.sort((a, b) => a.file.localeCompare(b.file));
   return clientJsAssets;
 }
