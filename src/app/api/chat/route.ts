@@ -24,6 +24,14 @@ type UpstreamChatResponse = {
   success?: unknown;
 };
 
+type TimingBreakdown = {
+  guard: number;
+  parse: number;
+  validate: number;
+  upstream: number;
+  sanitize: number;
+};
+
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -101,34 +109,78 @@ function sanitizeChatResponse(payload: UpstreamChatResponse): Record<string, unk
   return sanitized;
 }
 
+function formatServerTiming(timing: TimingBreakdown, totalMs: number): string {
+  return [
+    `guard;dur=${timing.guard.toFixed(1)}`,
+    `parse;dur=${timing.parse.toFixed(1)}`,
+    `validate;dur=${timing.validate.toFixed(1)}`,
+    `upstream;dur=${timing.upstream.toFixed(1)}`,
+    `sanitize;dur=${timing.sanitize.toFixed(1)}`,
+    `total;dur=${totalMs.toFixed(1)}`,
+  ].join(', ');
+}
+
 export async function POST(request: NextRequest) {
+  const startedAt = performance.now();
+  const timing: TimingBreakdown = {
+    guard: 0,
+    parse: 0,
+    validate: 0,
+    upstream: 0,
+    sanitize: 0,
+  };
+
+  const respond = (body: Record<string, unknown>, status: number): NextResponse => {
+    const totalMs = performance.now() - startedAt;
+    return NextResponse.json(body, {
+      status,
+      headers: {
+        'Cache-Control': 'no-store',
+        'Server-Timing': formatServerTiming(timing, totalMs),
+        'X-Chat-Proxy-Total-Ms': totalMs.toFixed(1),
+      },
+    });
+  };
+
+  const guardStart = performance.now();
   if (!isSameOrigin(request)) {
-    return NextResponse.json({ message: 'Forbidden origin.' }, { status: 403 });
+    timing.guard = performance.now() - guardStart;
+    return respond({ message: 'Forbidden origin.' }, 403);
   }
 
   if (!CHAT_UPSTREAM_URL) {
-    return NextResponse.json({ message: 'Chat service is unavailable.' }, { status: 503 });
+    timing.guard = performance.now() - guardStart;
+    return respond({ message: 'Chat service is unavailable.' }, 503);
   }
 
   const contentType = request.headers.get('content-type')?.toLowerCase() ?? '';
   if (!contentType.includes('application/json')) {
-    return NextResponse.json({ message: 'Unsupported content type.' }, { status: 415 });
+    timing.guard = performance.now() - guardStart;
+    return respond({ message: 'Unsupported content type.' }, 415);
   }
+  timing.guard = performance.now() - guardStart;
 
+  const parseStart = performance.now();
   let requestBody: unknown;
   try {
     requestBody = await request.json();
   } catch {
-    return NextResponse.json({ message: 'Invalid JSON payload.' }, { status: 400 });
+    timing.parse = performance.now() - parseStart;
+    return respond({ message: 'Invalid JSON payload.' }, 400);
   }
+  timing.parse = performance.now() - parseStart;
 
+  const validateStart = performance.now();
   const sanitizedRequest = sanitizeChatRequest(requestBody);
   if (!sanitizedRequest) {
-    return NextResponse.json({ message: 'Invalid request payload.' }, { status: 400 });
+    timing.validate = performance.now() - validateStart;
+    return respond({ message: 'Invalid request payload.' }, 400);
   }
+  timing.validate = performance.now() - validateStart;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const upstreamStart = performance.now();
 
   try {
     const upstreamResponse = await fetch(CHAT_UPSTREAM_URL, {
@@ -140,26 +192,27 @@ export async function POST(request: NextRequest) {
     });
 
     const upstreamText = await upstreamResponse.text();
+    timing.upstream = performance.now() - upstreamStart;
+    const sanitizeStart = performance.now();
     let upstreamJson: UpstreamChatResponse;
 
     try {
       upstreamJson = JSON.parse(upstreamText) as UpstreamChatResponse;
     } catch {
-      return NextResponse.json({ message: 'Chat service returned invalid data.' }, { status: 502 });
+      timing.sanitize = performance.now() - sanitizeStart;
+      return respond({ message: 'Chat service returned invalid data.' }, 502);
     }
 
-    return NextResponse.json(sanitizeChatResponse(upstreamJson), {
-      status: upstreamResponse.status,
-      headers: {
-        'Cache-Control': 'no-store',
-      },
-    });
+    const responsePayload = sanitizeChatResponse(upstreamJson);
+    timing.sanitize = performance.now() - sanitizeStart;
+    return respond(responsePayload, upstreamResponse.status);
   } catch (error) {
+    timing.upstream = performance.now() - upstreamStart;
     if (error instanceof Error && error.name === 'AbortError') {
-      return NextResponse.json({ message: 'Chat service timeout.' }, { status: 504 });
+      return respond({ message: 'Chat service timeout.' }, 504);
     }
 
-    return NextResponse.json({ message: 'Chat service unavailable.' }, { status: 502 });
+    return respond({ message: 'Chat service unavailable.' }, 502);
   } finally {
     clearTimeout(timeoutId);
   }
