@@ -14,24 +14,28 @@ export default function MiaWidget() {
   const [isMuted, setIsMuted] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const scratchpadRef = useRef<HTMLDivElement>(null);
+  const agentId = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID;
+
+  const logClientError = useCallback((context: string, err: unknown) => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error(context, err);
+    }
+  }, []);
 
   const conversation = useConversation({
     micMuted: isMuted,
     onConnect: () => {
-      console.log('ElevenLabs: connected');
       setStatusText('Connected — speak now');
       setMessages([]);
     },
     onDisconnect: () => {
-      console.log('ElevenLabs: disconnected');
       setStatusText("Let's get going!");
     },
     onError: (err) => {
-      console.error('ElevenLabs onError:', err);
+      logClientError('ElevenLabs onError:', err);
       setStatusText('Error — try again');
     },
     onMessage: ({ message, role }) => {
-      console.log(`[${role}]: ${message}`);
       setMessages((prev) => [
         ...prev,
         { role, text: message, timestamp: new Date() },
@@ -47,30 +51,32 @@ export default function MiaWidget() {
   }, [messages]);
 
   const handleClick = useCallback(async () => {
-    console.log('Button clicked, status:', conversation.status);
     try {
       if (conversation.status === 'connected') {
         await conversation.endSession();
       } else {
+        if (!agentId) {
+          setStatusText('Agent not configured');
+          return;
+        }
+
         setStatusText('Requesting mic...');
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        console.log('Mic granted, tracks:', stream.getTracks().length);
+        await navigator.mediaDevices.getUserMedia({ audio: true });
         setStatusText('Connecting to Mia...');
-        const sessionId = await conversation.startSession({
-          agentId: 'agent_8701kft0qqnceac80688vb207xta',
+        await conversation.startSession({
+          agentId,
           connectionType: 'websocket',
         });
-        console.log('Session started:', sessionId);
       }
     } catch (err) {
-      console.error('handleClick error:', err);
+      logClientError('Mia session error:', err);
       setStatusText(
         err instanceof DOMException && err.name === 'NotAllowedError'
           ? 'Mic blocked — check permissions'
           : 'Connection failed — try again'
       );
     }
-  }, [conversation]);
+  }, [agentId, conversation, logClientError]);
 
   const toggleMute = useCallback(() => {
     setIsMuted((prev) => !prev);
