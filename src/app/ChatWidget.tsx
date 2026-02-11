@@ -15,7 +15,7 @@ interface ChatState {
   role: string;
 }
 
-const CHAT_API_URL = process.env.NEXT_PUBLIC_CHAT_API_URL || 'https://hubspot-mcp-server.jason-b54.workers.dev/chat';
+const CHAT_API_URL = '/api/chat';
 
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -33,6 +33,12 @@ export default function ChatWidget() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const logClientError = useCallback((context: string, error: unknown) => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error(context, error);
+    }
+  }, []);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -89,6 +95,8 @@ export default function ChatWidget() {
       const response = await fetch(CHAT_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        cache: 'no-store',
         body: JSON.stringify({
           session_id: chatState.sessionId,
           message: content.trim(),
@@ -127,7 +135,7 @@ export default function ChatWidget() {
       }
 
     } catch (error) {
-      console.error('Chat error:', error);
+      logClientError('Chat request failed', error);
       setMessages(prev => [...prev, {
         role: 'system',
         content: 'Connection error. Please check your internet and try again.',
@@ -136,7 +144,7 @@ export default function ChatWidget() {
     } finally {
       setIsLoading(false);
     }
-  }, [chatState.sessionId, chatState.identifier, isLoading]);
+  }, [chatState.sessionId, chatState.identifier, isLoading, logClientError]);
 
   const verifyPin = useCallback(async () => {
     if (!pinValue || pinValue.length !== 6 || !chatState.identifier) return;
@@ -147,6 +155,8 @@ export default function ChatWidget() {
       const response = await fetch(CHAT_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        cache: 'no-store',
         body: JSON.stringify({
           session_id: chatState.sessionId,
           message: 'Verifying PIN...',
@@ -179,7 +189,7 @@ export default function ChatWidget() {
         }]);
       }
     } catch (error) {
-      console.error('PIN verification error:', error);
+      logClientError('PIN verification failed', error);
       setMessages(prev => [...prev, {
         role: 'system',
         content: 'Error verifying PIN. Please try again.',
@@ -189,7 +199,7 @@ export default function ChatWidget() {
       setIsLoading(false);
       setPinValue('');
     }
-  }, [pinValue, chatState.sessionId, chatState.identifier]);
+  }, [pinValue, chatState.sessionId, chatState.identifier, logClientError]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {

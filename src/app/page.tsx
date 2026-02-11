@@ -1,7 +1,5 @@
-import dynamic from 'next/dynamic';
-
-const MiaWidget = dynamic(() => import('./MiaWidget'), { ssr: false });
-const ChatWidget = dynamic(() => import('./ChatWidget'), { ssr: false });
+import MiaWidget from './MiaWidget';
+import ChatWidget from './ChatWidget';
 
 export default function Home() {
   return (

@@ -1,0 +1,65 @@
+name: Security Gates
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run production vulnerability audit
+        run: npm audit --omit=dev --audit-level=high
+
+  secret-scan:
+    name: Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run OSS gitleaks scan
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/repo" \
+            zricethezav/gitleaks:latest \
+            detect \
+            --source=/repo \
+            --log-opts="--all" \
+            --redact \
+            --verbose \
+            --no-banner
+
+  logging-regression-check:
+    name: Logging Regression Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Block verbose client logging statements
+        run: |
+          if rg -n "console\.(log|debug|info)\(" src; then
+            echo "Disallowed console logging statements found in src/"
+            exit 1
+          fi
