@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "perf:baseline": "npm run build && node scripts/perf-baseline.mjs",
+    "perf:baseline:report": "node scripts/perf-baseline.mjs"
   },
   "dependencies": {
     "@elevenlabs/client": "^0.13.1",
