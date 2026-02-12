@@ -1,28 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { sanitizeChatRequest, sanitizeChatResponse } from '@/lib/chat-contract';
 import { SERVER_CONFIG } from '@/lib/config.server';
 
 const REQUEST_TIMEOUT_MS = 12000;
-const MAX_MESSAGE_LENGTH = 4000;
-const MAX_IDENTIFIER_LENGTH = 128;
-const MAX_SESSION_ID_LENGTH = 128;
-const MAX_PIN_LENGTH = 12;
-
-type ChatRequestPayload = {
-  session_id?: string | null;
-  message: string;
-  identifier?: string | null;
-  pin?: string;
-};
-
-type UpstreamChatResponse = {
-  session_id?: unknown;
-  message?: unknown;
-  identified?: unknown;
-  identifier?: unknown;
-  verified?: unknown;
-  role?: unknown;
-  success?: unknown;
-};
 
 type TimingBreakdown = {
   guard: number;
@@ -34,10 +14,6 @@ type TimingBreakdown = {
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
 
 function isSameOrigin(request: NextRequest): boolean {
   const originHeader = request.headers.get('origin');
@@ -55,59 +31,6 @@ function isSameOrigin(request: NextRequest): boolean {
   }
 }
 
-function sanitizeChatRequest(payload: unknown): ChatRequestPayload | null {
-  if (!isObject(payload)) {
-    return null;
-  }
-
-  if (typeof payload.message !== 'string') {
-    return null;
-  }
-
-  const message = payload.message.trim();
-  if (message.length === 0 || message.length > MAX_MESSAGE_LENGTH) {
-    return null;
-  }
-
-  const sanitized: ChatRequestPayload = { message };
-
-  if (payload.session_id !== undefined && payload.session_id !== null) {
-    if (typeof payload.session_id !== 'string' || payload.session_id.length > MAX_SESSION_ID_LENGTH) {
-      return null;
-    }
-    sanitized.session_id = payload.session_id;
-  }
-
-  if (payload.identifier !== undefined && payload.identifier !== null) {
-    if (typeof payload.identifier !== 'string' || payload.identifier.length > MAX_IDENTIFIER_LENGTH) {
-      return null;
-    }
-    sanitized.identifier = payload.identifier;
-  }
-
-  if (payload.pin !== undefined) {
-    if (typeof payload.pin !== 'string' || payload.pin.length === 0 || payload.pin.length > MAX_PIN_LENGTH) {
-      return null;
-    }
-    sanitized.pin = payload.pin;
-  }
-
-  return sanitized;
-}
-
-function sanitizeChatResponse(payload: UpstreamChatResponse): Record<string, unknown> {
-  const sanitized: Record<string, unknown> = {};
-
-  if (typeof payload.session_id === 'string') sanitized.session_id = payload.session_id;
-  if (typeof payload.message === 'string') sanitized.message = payload.message;
-  if (typeof payload.identified === 'boolean') sanitized.identified = payload.identified;
-  if (typeof payload.identifier === 'string') sanitized.identifier = payload.identifier;
-  if (typeof payload.verified === 'boolean') sanitized.verified = payload.verified;
-  if (typeof payload.role === 'string') sanitized.role = payload.role;
-  if (typeof payload.success === 'boolean') sanitized.success = payload.success;
-
-  return sanitized;
-}
 
 function formatServerTiming(timing: TimingBreakdown, totalMs: number): string {
   return [
@@ -130,7 +53,7 @@ export async function POST(request: NextRequest) {
     sanitize: 0,
   };
 
-  const respond = (body: Record<string, unknown>, status: number): NextResponse => {
+  const respond = (body: unknown, status: number): NextResponse => {
     const totalMs = performance.now() - startedAt;
     return NextResponse.json(body, {
       status,
@@ -195,10 +118,10 @@ export async function POST(request: NextRequest) {
     const upstreamText = await upstreamResponse.text();
     timing.upstream = performance.now() - upstreamStart;
     const sanitizeStart = performance.now();
-    let upstreamJson: UpstreamChatResponse;
+    let upstreamJson: unknown;
 
     try {
-      upstreamJson = JSON.parse(upstreamText) as UpstreamChatResponse;
+      upstreamJson = JSON.parse(upstreamText);
     } catch {
       timing.sanitize = performance.now() - sanitizeStart;
       return respond({ message: 'Chat service returned invalid data.' }, 502);

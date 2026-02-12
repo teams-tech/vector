@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import styles from './ChatWidget.module.css';
 import { MAX_TRANSCRIPT_MESSAGES, TRANSCRIPT_SCROLL_THROTTLE_MS } from '@/lib/chatLimits';
+import { sanitizeChatResponse, type ChatResponsePayload } from '@/lib/chat-contract';
 
 interface Message {
   id: string;
@@ -193,7 +194,7 @@ export default function ChatWidget() {
         }),
       });
 
-      const data = await response.json();
+      const data: ChatResponsePayload = sanitizeChatResponse(await response.json());
 
       if (data.session_id && !chatState.sessionId) {
         setChatState(prev => ({ ...prev, sessionId: data.session_id }));
@@ -249,7 +250,7 @@ export default function ChatWidget() {
         }),
       });
 
-      const data = await response.json();
+      const data: ChatResponsePayload = sanitizeChatResponse(await response.json());
 
       if (data.success) {
         setChatState(prev => ({
