@@ -33,15 +33,19 @@ export function respondWithTiming(
   body: unknown,
   status: number,
   startedAt: number,
-  timing: TimingBreakdown
+  timing: TimingBreakdown,
+  additionalHeaders?: Record<string, string>
 ): NextResponse {
   const totalMs = performance.now() - startedAt;
+  const headers: Record<string, string> = {
+    'Cache-Control': 'no-store',
+    'Server-Timing': formatServerTiming(timing, totalMs),
+    'X-Chat-Proxy-Total-Ms': totalMs.toFixed(1),
+    ...additionalHeaders,
+  };
+
   return NextResponse.json(body, {
     status,
-    headers: {
-      'Cache-Control': 'no-store',
-      'Server-Timing': formatServerTiming(timing, totalMs),
-      'X-Chat-Proxy-Total-Ms': totalMs.toFixed(1),
-    },
+    headers,
   });
 }
