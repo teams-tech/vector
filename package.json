@@ -8,6 +8,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings=0",
+    "domain:check": "node scripts/domain-glossary-check.mjs",
     "perf:baseline": "npm run build && node scripts/perf-baseline.mjs",
     "perf:baseline:report": "node scripts/perf-baseline.mjs"
   },

@@ -32,5 +32,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Domain glossary check
+        run: npm run domain:check
+
       - name: Build
         run: npm run build
