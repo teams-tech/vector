@@ -40,9 +40,12 @@ jobs:
 
       - name: Run OSS gitleaks scan
         run: |
+          # Refresh digest (multi-arch manifest) with:
+          # token=$(curl -fsSL "https://auth.docker.io/token?service=registry.docker.io&scope=repository:zricethezav/gitleaks:pull" | python3 -c "import sys,json;print(json.load(sys.stdin)['token'])")
+          # curl -fsSI -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.index.v1+json" -H "Authorization: Bearer $token" "https://registry-1.docker.io/v2/zricethezav/gitleaks/manifests/latest" | awk -F': ' 'tolower($1)==\"docker-content-digest\" {print $2}'
           docker run --rm \
             -v "${{ github.workspace }}:/repo" \
-            zricethezav/gitleaks:latest \
+            zricethezav/gitleaks@sha256:691af3c7c5a48b16f187ce3446d5f194838f91238f27270ed36eef6359a574d9 \
             detect \
             --source=/repo \
             --log-opts="--all" \
