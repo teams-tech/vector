@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import styles from './ChatWidget.module.css';
-import { MAX_TRANSCRIPT_MESSAGES } from '@/lib/chatLimits';
+import { MAX_TRANSCRIPT_MESSAGES, TRANSCRIPT_SCROLL_THROTTLE_MS } from '@/lib/chatLimits';
 
 interface Message {
   id: string;
@@ -35,6 +35,9 @@ export default function ChatWidget() {
   const [pinValue, setPinValue] = useState('');
 
   const messageIdRef = useRef(0);
+  const prefersReducedMotionRef = useRef(false);
+  const scrollThrottleUntilRef = useRef(0);
+  const scrollRafRef = useRef<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -61,10 +64,65 @@ export default function ChatWidget() {
     []
   );
 
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updatePreference = () => {
+      prefersReducedMotionRef.current = mediaQuery.matches;
+    };
+
+    updatePreference();
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', updatePreference);
+      return () => mediaQuery.removeEventListener('change', updatePreference);
+    }
+
+    mediaQuery.addListener(updatePreference);
+    return () => mediaQuery.removeListener(updatePreference);
+  }, []);
+
+  const scheduleScrollToBottom = useCallback((preferSmooth: boolean) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (scrollRafRef.current !== null) {
+      return;
+    }
+
+    scrollRafRef.current = window.requestAnimationFrame(() => {
+      scrollRafRef.current = null;
+
+      const now = performance.now();
+      if (now < scrollThrottleUntilRef.current) {
+        return;
+      }
+      scrollThrottleUntilRef.current = now + TRANSCRIPT_SCROLL_THROTTLE_MS;
+
+      messagesEndRef.current?.scrollIntoView({
+        behavior: preferSmooth && !prefersReducedMotionRef.current ? 'smooth' : 'auto',
+        block: 'end',
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (scrollRafRef.current !== null && typeof window !== 'undefined') {
+        window.cancelAnimationFrame(scrollRafRef.current);
+        scrollRafRef.current = null;
+      }
+    };
+  }, []);
+
   // Auto-scroll to bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    scheduleScrollToBottom(false);
+  }, [messages, scheduleScrollToBottom]);
 
   // Focus input when chat opens
   useEffect(() => {
@@ -75,19 +133,32 @@ export default function ChatWidget() {
 
   // Handle iOS keyboard - scroll to bottom when input focused
   useEffect(() => {
+    let focusTimeoutId: ReturnType<typeof setTimeout> | null = null;
     const handleFocus = () => {
       // Small delay to let iOS keyboard fully open
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      if (focusTimeoutId) {
+        clearTimeout(focusTimeoutId);
+      }
+
+      focusTimeoutId = setTimeout(() => {
+        scheduleScrollToBottom(true);
       }, 300);
     };
 
     const input = inputRef.current;
     if (input) {
       input.addEventListener('focus', handleFocus);
-      return () => input.removeEventListener('focus', handleFocus);
     }
-  }, [isOpen]);
+
+    return () => {
+      if (input) {
+        input.removeEventListener('focus', handleFocus);
+      }
+      if (focusTimeoutId) {
+        clearTimeout(focusTimeoutId);
+      }
+    };
+  }, [isOpen, scheduleScrollToBottom]);
 
   // Initialize chat with welcome message
   useEffect(() => {

@@ -3,7 +3,7 @@
 import { useConversation } from '@elevenlabs/react';
 import { useCallback, useState, useRef, useEffect } from 'react';
 import styles from './MiaWidget.module.css';
-import { MAX_TRANSCRIPT_MESSAGES } from '@/lib/chatLimits';
+import { MAX_TRANSCRIPT_MESSAGES, TRANSCRIPT_SCROLL_THROTTLE_MS } from '@/lib/chatLimits';
 
 interface Message {
   id: string;
@@ -17,6 +17,9 @@ export default function MiaWidget() {
   const [isMuted, setIsMuted] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const messageIdRef = useRef(0);
+  const prefersReducedMotionRef = useRef(false);
+  const scrollThrottleUntilRef = useRef(0);
+  const scrollRafRef = useRef<number | null>(null);
   const scratchpadRef = useRef<HTMLDivElement>(null);
   const agentId = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID;
 
@@ -38,6 +41,66 @@ export default function MiaWidget() {
     },
     []
   );
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updatePreference = () => {
+      prefersReducedMotionRef.current = mediaQuery.matches;
+    };
+
+    updatePreference();
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', updatePreference);
+      return () => mediaQuery.removeEventListener('change', updatePreference);
+    }
+
+    mediaQuery.addListener(updatePreference);
+    return () => mediaQuery.removeListener(updatePreference);
+  }, []);
+
+  const scheduleScratchpadScroll = useCallback((preferSmooth: boolean) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (scrollRafRef.current !== null) {
+      return;
+    }
+
+    scrollRafRef.current = window.requestAnimationFrame(() => {
+      scrollRafRef.current = null;
+
+      const now = performance.now();
+      if (now < scrollThrottleUntilRef.current) {
+        return;
+      }
+      scrollThrottleUntilRef.current = now + TRANSCRIPT_SCROLL_THROTTLE_MS;
+
+      const scratchpad = scratchpadRef.current;
+      if (!scratchpad) {
+        return;
+      }
+
+      scratchpad.scrollTo({
+        top: scratchpad.scrollHeight,
+        behavior: preferSmooth && !prefersReducedMotionRef.current ? 'smooth' : 'auto',
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (scrollRafRef.current !== null && typeof window !== 'undefined') {
+        window.cancelAnimationFrame(scrollRafRef.current);
+        scrollRafRef.current = null;
+      }
+    };
+  }, []);
 
   const conversation = useConversation({
     micMuted: isMuted,
@@ -63,10 +126,8 @@ export default function MiaWidget() {
 
   // Auto-scroll scratchpad
   useEffect(() => {
-    if (scratchpadRef.current) {
-      scratchpadRef.current.scrollTop = scratchpadRef.current.scrollHeight;
-    }
-  }, [messages]);
+    scheduleScratchpadScroll(false);
+  }, [messages, scheduleScratchpadScroll]);
 
   const handleClick = useCallback(async () => {
     try {
