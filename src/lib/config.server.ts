@@ -55,7 +55,7 @@ function parseAllowedOrigins(value: string | null): string[] | null {
     normalizedOrigins.push(normalized);
   }
 
-  return [...new Set(normalizedOrigins)];
+  return Array.from(new Set(normalizedOrigins));
 }
 
 export function readServerConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
