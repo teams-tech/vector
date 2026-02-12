@@ -1,5 +1,4 @@
-import MiaWidget from './MiaWidget';
-import ChatWidget from './ChatWidget';
+import { LazyChatWidget, LazyMiaWidget } from './LazyWidgets';
 import styles from './page.module.css';
 
 export default function Home() {
@@ -42,7 +41,7 @@ export default function Home() {
             AI-powered dealership operations and customer experience. Sales, F&amp;I, desking, service, inventory, floor plans, and customer care — all by voice.
           </p>
           <div className={styles['hero-widget']}>
-            <MiaWidget />
+            <LazyMiaWidget />
           </div>
         </div>
       </section>
@@ -140,7 +139,7 @@ export default function Home() {
       </footer>
 
       {/* Floating Chat Widget */}
-      <ChatWidget />
+      <LazyChatWidget />
     </>
   );
 }
