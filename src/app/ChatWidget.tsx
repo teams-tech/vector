@@ -5,6 +5,7 @@ import styles from './ChatWidget.module.css';
 import { MAX_TRANSCRIPT_MESSAGES } from '@/lib/chatLimits';
 
 interface Message {
+  id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
@@ -33,6 +34,7 @@ export default function ChatWidget() {
   const [showPinInput, setShowPinInput] = useState(false);
   const [pinValue, setPinValue] = useState('');
 
+  const messageIdRef = useRef(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -45,6 +47,19 @@ export default function ChatWidget() {
   const appendMessage = useCallback((message: Message) => {
     setMessages((prev) => [...prev, message].slice(-MAX_TRANSCRIPT_MESSAGES));
   }, []);
+
+  const createMessage = useCallback(
+    (role: Message['role'], content: string): Message => {
+      messageIdRef.current += 1;
+      return {
+        id: `chat-msg-${messageIdRef.current}`,
+        role,
+        content,
+        timestamp: new Date(),
+      };
+    },
+    []
+  );
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -77,22 +92,19 @@ export default function ChatWidget() {
   // Initialize chat with welcome message
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      setMessages([{
-        role: 'assistant',
-        content: "Hi! I'm Mia, your TEAMS Technology assistant. I can help with vehicle lookups, inventory questions, and more.\n\nTo get started, please share your phone number or code name so I can identify you.",
-        timestamp: new Date(),
-      }]);
+      setMessages([
+        createMessage(
+          'assistant',
+          "Hi! I'm Mia, your TEAMS Technology assistant. I can help with vehicle lookups, inventory questions, and more.\n\nTo get started, please share your phone number or code name so I can identify you."
+        ),
+      ]);
     }
-  }, [isOpen, messages.length]);
+  }, [createMessage, isOpen, messages.length]);
 
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim() || isLoading) return;
 
-    const userMessage: Message = {
-      role: 'user',
-      content: content.trim(),
-      timestamp: new Date(),
-    };
+    const userMessage = createMessage('user', content.trim());
     appendMessage(userMessage);
     setInputValue('');
     setIsLoading(true);
@@ -128,11 +140,10 @@ export default function ChatWidget() {
         }));
       }
 
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: data.message || 'I apologize, but I encountered an error. Please try again.',
-        timestamp: new Date(),
-      };
+      const assistantMessage = createMessage(
+        'assistant',
+        data.message || 'I apologize, but I encountered an error. Please try again.'
+      );
       appendMessage(assistantMessage);
 
       // Check if we need PIN verification
@@ -142,15 +153,11 @@ export default function ChatWidget() {
 
     } catch (error) {
       logClientError('Chat request failed', error);
-      appendMessage({
-        role: 'system',
-        content: 'Connection error. Please check your internet and try again.',
-        timestamp: new Date(),
-      });
+      appendMessage(createMessage('system', 'Connection error. Please check your internet and try again.'));
     } finally {
       setIsLoading(false);
     }
-  }, [appendMessage, chatState.sessionId, chatState.identifier, isLoading, logClientError]);
+  }, [appendMessage, chatState.sessionId, chatState.identifier, createMessage, isLoading, logClientError]);
 
   const verifyPin = useCallback(async () => {
     if (!pinValue || pinValue.length !== 6 || !chatState.identifier) return;
@@ -182,30 +189,18 @@ export default function ChatWidget() {
         setShowPinInput(false);
         setPinValue('');
 
-        appendMessage({
-          role: 'assistant',
-          content: data.message || `PIN verified! You now have ${data.role} access.`,
-          timestamp: new Date(),
-        });
+        appendMessage(createMessage('assistant', data.message || `PIN verified! You now have ${data.role} access.`));
       } else {
-        appendMessage({
-          role: 'system',
-          content: data.message || 'PIN verification failed. Please try again.',
-          timestamp: new Date(),
-        });
+        appendMessage(createMessage('system', data.message || 'PIN verification failed. Please try again.'));
       }
     } catch (error) {
       logClientError('PIN verification failed', error);
-      appendMessage({
-        role: 'system',
-        content: 'Error verifying PIN. Please try again.',
-        timestamp: new Date(),
-      });
+      appendMessage(createMessage('system', 'Error verifying PIN. Please try again.'));
     } finally {
       setIsLoading(false);
       setPinValue('');
     }
-  }, [appendMessage, pinValue, chatState.sessionId, chatState.identifier, logClientError]);
+  }, [appendMessage, pinValue, chatState.sessionId, chatState.identifier, createMessage, logClientError]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -271,9 +266,9 @@ export default function ChatWidget() {
 
           {/* Messages */}
           <div className={styles['chat-messages']}>
-            {messages.map((msg, i) => (
+            {messages.map((msg) => (
               <div
-                key={i}
+                key={msg.id}
                 className={`${styles['chat-message']} ${styles[`chat-message-${msg.role}`]}`}
               >
                 {msg.role === 'assistant' && (

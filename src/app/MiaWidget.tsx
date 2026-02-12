@@ -6,6 +6,7 @@ import styles from './MiaWidget.module.css';
 import { MAX_TRANSCRIPT_MESSAGES } from '@/lib/chatLimits';
 
 interface Message {
+  id: string;
   role: 'user' | 'agent';
   text: string;
   timestamp: Date;
@@ -15,6 +16,7 @@ export default function MiaWidget() {
   const [statusText, setStatusText] = useState("Let's get going!");
   const [isMuted, setIsMuted] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const messageIdRef = useRef(0);
   const scratchpadRef = useRef<HTMLDivElement>(null);
   const agentId = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID;
 
@@ -24,10 +26,24 @@ export default function MiaWidget() {
     }
   }, []);
 
+  const createMessage = useCallback(
+    (role: Message['role'], text: string): Message => {
+      messageIdRef.current += 1;
+      return {
+        id: `mia-msg-${messageIdRef.current}`,
+        role,
+        text,
+        timestamp: new Date(),
+      };
+    },
+    []
+  );
+
   const conversation = useConversation({
     micMuted: isMuted,
     onConnect: () => {
       setStatusText('Connected — speak now');
+      messageIdRef.current = 0;
       setMessages([]);
     },
     onDisconnect: () => {
@@ -40,7 +56,7 @@ export default function MiaWidget() {
     onMessage: ({ message, role }) => {
       setMessages((prev) => [
         ...prev,
-        { role, text: message, timestamp: new Date() },
+        createMessage(role, message),
       ].slice(-MAX_TRANSCRIPT_MESSAGES));
     },
   });
@@ -135,8 +151,8 @@ export default function MiaWidget() {
               Conversation will appear here...
             </div>
           ) : (
-            messages.map((msg, i) => (
-              <div key={i} className={`${styles['mia-message']} ${styles[`mia-message-${msg.role}`]}`}>
+            messages.map((msg) => (
+              <div key={msg.id} className={`${styles['mia-message']} ${styles[`mia-message-${msg.role}`]}`}>
                 <span className={styles['mia-message-role']}>
                   {msg.role === 'agent' ? 'Mia' : 'You'}
                 </span>
