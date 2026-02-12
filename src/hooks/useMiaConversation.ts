@@ -4,6 +4,7 @@ import { useConversation } from '@elevenlabs/react';
 import { useCallback, useRef, useState } from 'react';
 import { MAX_TRANSCRIPT_MESSAGES } from '@/lib/chatLimits';
 import { PUBLIC_CONFIG } from '@/lib/config';
+import { reportClientError } from '@/lib/clientTelemetry';
 
 const INITIAL_STATUS = "Let's get going!";
 
@@ -30,12 +31,6 @@ export function useMiaConversation(): UseMiaConversationResult {
   const messageIdRef = useRef(0);
   const agentId = PUBLIC_CONFIG.elevenLabsAgentId;
 
-  const logClientError = useCallback((context: string, err: unknown) => {
-    if (process.env.NODE_ENV !== 'production') {
-      console.error(context, err);
-    }
-  }, []);
-
   const createMessage = useCallback((role: MiaMessage['role'], text: string): MiaMessage => {
     messageIdRef.current += 1;
     return {
@@ -57,7 +52,7 @@ export function useMiaConversation(): UseMiaConversationResult {
       setStatusText(INITIAL_STATUS);
     },
     onError: (err) => {
-      logClientError('ElevenLabs onError:', err);
+      reportClientError('elevenlabs_on_error', err);
       setStatusText('Error — try again');
     },
     onMessage: ({ message, role }) => {
@@ -84,14 +79,14 @@ export function useMiaConversation(): UseMiaConversationResult {
         });
       }
     } catch (err) {
-      logClientError('Mia session error:', err);
+      reportClientError('mia_session_error', err);
       setStatusText(
         err instanceof DOMException && err.name === 'NotAllowedError'
           ? 'Mic blocked — check permissions'
           : 'Connection failed — try again'
       );
     }
-  }, [agentId, conversation, logClientError]);
+  }, [agentId, conversation]);
 
   const toggleMute = useCallback(() => {
     setIsMuted((prev) => !prev);
