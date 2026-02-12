@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { SERVER_CONFIG } from '@/lib/config.server';
 
-const CHAT_UPSTREAM_URL = process.env.CHAT_API_URL;
 const REQUEST_TIMEOUT_MS = 12000;
 const MAX_MESSAGE_LENGTH = 4000;
 const MAX_IDENTIFIER_LENGTH = 128;
@@ -148,10 +148,11 @@ export async function POST(request: NextRequest) {
     return respond({ message: 'Forbidden origin.' }, 403);
   }
 
-  if (!CHAT_UPSTREAM_URL) {
+  if (!SERVER_CONFIG.chatApiUrl) {
     timing.guard = performance.now() - guardStart;
     return respond({ message: 'Chat service is unavailable.' }, 503);
   }
+  const chatUpstreamUrl = SERVER_CONFIG.chatApiUrl;
 
   const contentType = request.headers.get('content-type')?.toLowerCase() ?? '';
   if (!contentType.includes('application/json')) {
@@ -183,7 +184,7 @@ export async function POST(request: NextRequest) {
   const upstreamStart = performance.now();
 
   try {
-    const upstreamResponse = await fetch(CHAT_UPSTREAM_URL, {
+    const upstreamResponse = await fetch(chatUpstreamUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(sanitizedRequest),

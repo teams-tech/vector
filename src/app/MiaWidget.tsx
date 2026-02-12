@@ -4,6 +4,7 @@ import { useConversation } from '@elevenlabs/react';
 import { useCallback, useState, useRef, useEffect } from 'react';
 import styles from './MiaWidget.module.css';
 import { MAX_TRANSCRIPT_MESSAGES, TRANSCRIPT_SCROLL_THROTTLE_MS } from '@/lib/chatLimits';
+import { PUBLIC_CONFIG } from '@/lib/config';
 
 interface Message {
   id: string;
@@ -21,7 +22,7 @@ export default function MiaWidget() {
   const scrollThrottleUntilRef = useRef(0);
   const scrollRafRef = useRef<number | null>(null);
   const scratchpadRef = useRef<HTMLDivElement>(null);
-  const agentId = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID;
+  const agentId = PUBLIC_CONFIG.elevenLabsAgentId;
 
   const logClientError = useCallback((context: string, err: unknown) => {
     if (process.env.NODE_ENV !== 'production') {
