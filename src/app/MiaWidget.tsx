@@ -3,6 +3,7 @@
 import { useConversation } from '@elevenlabs/react';
 import { useCallback, useState, useRef, useEffect } from 'react';
 import styles from './MiaWidget.module.css';
+import { MAX_TRANSCRIPT_MESSAGES } from '@/lib/chatLimits';
 
 interface Message {
   role: 'user' | 'agent';
@@ -40,7 +41,7 @@ export default function MiaWidget() {
       setMessages((prev) => [
         ...prev,
         { role, text: message, timestamp: new Date() },
-      ]);
+      ].slice(-MAX_TRANSCRIPT_MESSAGES));
     },
   });
 

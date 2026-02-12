@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import styles from './ChatWidget.module.css';
+import { MAX_TRANSCRIPT_MESSAGES } from '@/lib/chatLimits';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -39,6 +40,10 @@ export default function ChatWidget() {
     if (process.env.NODE_ENV !== 'production') {
       console.error(context, error);
     }
+  }, []);
+
+  const appendMessage = useCallback((message: Message) => {
+    setMessages((prev) => [...prev, message].slice(-MAX_TRANSCRIPT_MESSAGES));
   }, []);
 
   // Auto-scroll to bottom
@@ -88,7 +93,7 @@ export default function ChatWidget() {
       content: content.trim(),
       timestamp: new Date(),
     };
-    setMessages(prev => [...prev, userMessage]);
+    appendMessage(userMessage);
     setInputValue('');
     setIsLoading(true);
 
@@ -128,7 +133,7 @@ export default function ChatWidget() {
         content: data.message || 'I apologize, but I encountered an error. Please try again.',
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, assistantMessage]);
+      appendMessage(assistantMessage);
 
       // Check if we need PIN verification
       if (data.identified && !data.verified && data.message?.toLowerCase().includes('pin')) {
@@ -137,15 +142,15 @@ export default function ChatWidget() {
 
     } catch (error) {
       logClientError('Chat request failed', error);
-      setMessages(prev => [...prev, {
+      appendMessage({
         role: 'system',
         content: 'Connection error. Please check your internet and try again.',
         timestamp: new Date(),
-      }]);
+      });
     } finally {
       setIsLoading(false);
     }
-  }, [chatState.sessionId, chatState.identifier, isLoading, logClientError]);
+  }, [appendMessage, chatState.sessionId, chatState.identifier, isLoading, logClientError]);
 
   const verifyPin = useCallback(async () => {
     if (!pinValue || pinValue.length !== 6 || !chatState.identifier) return;
@@ -177,30 +182,30 @@ export default function ChatWidget() {
         setShowPinInput(false);
         setPinValue('');
 
-        setMessages(prev => [...prev, {
+        appendMessage({
           role: 'assistant',
           content: data.message || `PIN verified! You now have ${data.role} access.`,
           timestamp: new Date(),
-        }]);
+        });
       } else {
-        setMessages(prev => [...prev, {
+        appendMessage({
           role: 'system',
           content: data.message || 'PIN verification failed. Please try again.',
           timestamp: new Date(),
-        }]);
+        });
       }
     } catch (error) {
       logClientError('PIN verification failed', error);
-      setMessages(prev => [...prev, {
+      appendMessage({
         role: 'system',
         content: 'Error verifying PIN. Please try again.',
         timestamp: new Date(),
-      }]);
+      });
     } finally {
       setIsLoading(false);
       setPinValue('');
     }
-  }, [pinValue, chatState.sessionId, chatState.identifier, logClientError]);
+  }, [appendMessage, pinValue, chatState.sessionId, chatState.identifier, logClientError]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
