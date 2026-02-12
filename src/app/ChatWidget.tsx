@@ -206,10 +206,11 @@ export default function ChatWidget() {
         setChatState(prev => ({ ...prev, identifier }));
       }
 
-      if (data.verified !== undefined) {
+      const verified = data.verified;
+      if (typeof verified === 'boolean') {
         setChatState(prev => ({
           ...prev,
-          verified: data.verified,
+          verified,
           role: data.role || prev.role,
         }));
       }
