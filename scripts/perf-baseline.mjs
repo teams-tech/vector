@@ -63,7 +63,7 @@ async function readJsonFile(filePath) {
   let contents;
   try {
     contents = await fs.readFile(filePath, 'utf8');
-  } catch (error) {
+  } catch {
     throw new Error(`Missing required build artifact: ${toPosixPath(path.relative(PROJECT_ROOT, filePath))}`);
   }
 

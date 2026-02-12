@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings=0",
     "perf:baseline": "npm run build && node scripts/perf-baseline.mjs",
     "perf:baseline:report": "node scripts/perf-baseline.mjs"
   },
