@@ -1,16 +1,22 @@
 import { NextRequest } from 'next/server';
 
-export function isSameOrigin(request: NextRequest): boolean {
+export function isAllowedOrigin(
+  request: NextRequest,
+  allowedOrigins: ReadonlySet<string>
+): boolean {
   const originHeader = request.headers.get('origin');
 
   if (!originHeader) {
-    return true;
+    return false;
   }
 
   try {
     const origin = new URL(originHeader);
-    const requestUrl = new URL(request.url);
-    return origin.protocol === requestUrl.protocol && origin.host === requestUrl.host;
+    if (origin.protocol !== 'http:' && origin.protocol !== 'https:') {
+      return false;
+    }
+
+    return allowedOrigins.has(origin.origin);
   } catch {
     return false;
   }

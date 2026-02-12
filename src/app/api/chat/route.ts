@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { isSameOrigin } from '@/lib/chat/guards';
+import { isAllowedOrigin } from '@/lib/chat/guards';
 import { callChatUpstream } from '@/lib/chat/upstream';
 import { createTimingBreakdown, respondWithTiming } from '@/lib/chat/response';
 import { hasJsonContentType, parseJsonBody, validateChatRequestPayload } from '@/lib/chat/validation';
@@ -25,16 +25,16 @@ export async function POST(request: NextRequest) {
     respondWithTiming(body, status, startedAt, timing, headers);
 
   const guardStart = performance.now();
-  if (!isSameOrigin(request)) {
-    timing.guard = performance.now() - guardStart;
-    return respond({ message: 'Forbidden origin.' }, 403);
-  }
-
-  if (!SERVER_CONFIG.chatApiUrl) {
+  if (SERVER_CONFIG.hasErrors || !SERVER_CONFIG.chatApiUrl) {
     timing.guard = performance.now() - guardStart;
     return respond({ message: 'Chat service is unavailable.' }, 503);
   }
   const chatUpstreamUrl = SERVER_CONFIG.chatApiUrl;
+
+  if (!isAllowedOrigin(request, SERVER_CONFIG.chatAllowedOrigins)) {
+    timing.guard = performance.now() - guardStart;
+    return respond({ message: 'Forbidden origin.' }, 403);
+  }
 
   if (!hasJsonContentType(request.headers.get('content-type'))) {
     timing.guard = performance.now() - guardStart;
