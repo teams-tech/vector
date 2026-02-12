@@ -1,69 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { sanitizeChatRequest, sanitizeChatResponse } from '@/lib/chat-contract';
+import { NextRequest } from 'next/server';
+import { isSameOrigin } from '@/lib/chat/guards';
+import { callChatUpstream } from '@/lib/chat/upstream';
+import { createTimingBreakdown, respondWithTiming } from '@/lib/chat/response';
+import { hasJsonContentType, parseJsonBody, validateChatRequestPayload } from '@/lib/chat/validation';
 import { SERVER_CONFIG } from '@/lib/config.server';
 
 const REQUEST_TIMEOUT_MS = 12000;
 
-type TimingBreakdown = {
-  guard: number;
-  parse: number;
-  validate: number;
-  upstream: number;
-  sanitize: number;
-};
-
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-function isSameOrigin(request: NextRequest): boolean {
-  const originHeader = request.headers.get('origin');
-
-  if (!originHeader) {
-    return true;
-  }
-
-  try {
-    const origin = new URL(originHeader);
-    const requestUrl = new URL(request.url);
-    return origin.protocol === requestUrl.protocol && origin.host === requestUrl.host;
-  } catch {
-    return false;
-  }
-}
-
-
-function formatServerTiming(timing: TimingBreakdown, totalMs: number): string {
-  return [
-    `guard;dur=${timing.guard.toFixed(1)}`,
-    `parse;dur=${timing.parse.toFixed(1)}`,
-    `validate;dur=${timing.validate.toFixed(1)}`,
-    `upstream;dur=${timing.upstream.toFixed(1)}`,
-    `sanitize;dur=${timing.sanitize.toFixed(1)}`,
-    `total;dur=${totalMs.toFixed(1)}`,
-  ].join(', ');
-}
-
 export async function POST(request: NextRequest) {
   const startedAt = performance.now();
-  const timing: TimingBreakdown = {
-    guard: 0,
-    parse: 0,
-    validate: 0,
-    upstream: 0,
-    sanitize: 0,
-  };
+  const timing = createTimingBreakdown();
 
-  const respond = (body: unknown, status: number): NextResponse => {
-    const totalMs = performance.now() - startedAt;
-    return NextResponse.json(body, {
-      status,
-      headers: {
-        'Cache-Control': 'no-store',
-        'Server-Timing': formatServerTiming(timing, totalMs),
-        'X-Chat-Proxy-Total-Ms': totalMs.toFixed(1),
-      },
-    });
-  };
+  const respond = (body: unknown, status: number) => respondWithTiming(body, status, startedAt, timing);
 
   const guardStart = performance.now();
   if (!isSameOrigin(request)) {
@@ -77,67 +28,35 @@ export async function POST(request: NextRequest) {
   }
   const chatUpstreamUrl = SERVER_CONFIG.chatApiUrl;
 
-  const contentType = request.headers.get('content-type')?.toLowerCase() ?? '';
-  if (!contentType.includes('application/json')) {
+  if (!hasJsonContentType(request.headers.get('content-type'))) {
     timing.guard = performance.now() - guardStart;
     return respond({ message: 'Unsupported content type.' }, 415);
   }
   timing.guard = performance.now() - guardStart;
 
   const parseStart = performance.now();
-  let requestBody: unknown;
-  try {
-    requestBody = await request.json();
-  } catch {
+  const parsedBody = await parseJsonBody(request);
+  if (!parsedBody.ok) {
     timing.parse = performance.now() - parseStart;
     return respond({ message: 'Invalid JSON payload.' }, 400);
   }
   timing.parse = performance.now() - parseStart;
 
   const validateStart = performance.now();
-  const sanitizedRequest = sanitizeChatRequest(requestBody);
+  const sanitizedRequest = validateChatRequestPayload(parsedBody.value);
   if (!sanitizedRequest) {
     timing.validate = performance.now() - validateStart;
     return respond({ message: 'Invalid request payload.' }, 400);
   }
   timing.validate = performance.now() - validateStart;
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-  const upstreamStart = performance.now();
+  const upstreamResult = await callChatUpstream(chatUpstreamUrl, sanitizedRequest, REQUEST_TIMEOUT_MS);
+  timing.upstream = upstreamResult.upstreamMs;
+  timing.sanitize = upstreamResult.sanitizeMs;
 
-  try {
-    const upstreamResponse = await fetch(chatUpstreamUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(sanitizedRequest),
-      cache: 'no-store',
-      signal: controller.signal,
-    });
-
-    const upstreamText = await upstreamResponse.text();
-    timing.upstream = performance.now() - upstreamStart;
-    const sanitizeStart = performance.now();
-    let upstreamJson: unknown;
-
-    try {
-      upstreamJson = JSON.parse(upstreamText);
-    } catch {
-      timing.sanitize = performance.now() - sanitizeStart;
-      return respond({ message: 'Chat service returned invalid data.' }, 502);
-    }
-
-    const responsePayload = sanitizeChatResponse(upstreamJson);
-    timing.sanitize = performance.now() - sanitizeStart;
-    return respond(responsePayload, upstreamResponse.status);
-  } catch (error) {
-    timing.upstream = performance.now() - upstreamStart;
-    if (error instanceof Error && error.name === 'AbortError') {
-      return respond({ message: 'Chat service timeout.' }, 504);
-    }
-
-    return respond({ message: 'Chat service unavailable.' }, 502);
-  } finally {
-    clearTimeout(timeoutId);
+  if (!upstreamResult.ok) {
+    return respond({ message: upstreamResult.message }, upstreamResult.status);
   }
+
+  return respond(upstreamResult.payload, upstreamResult.status);
 }
