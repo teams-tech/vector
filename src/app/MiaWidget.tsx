@@ -1,47 +1,16 @@
 'use client';
 
-import { useConversation } from '@elevenlabs/react';
-import { useCallback, useState, useRef, useEffect } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import styles from './MiaWidget.module.css';
-import { MAX_TRANSCRIPT_MESSAGES, TRANSCRIPT_SCROLL_THROTTLE_MS } from '@/lib/chatLimits';
-import { PUBLIC_CONFIG } from '@/lib/config';
-
-interface Message {
-  id: string;
-  role: 'user' | 'agent';
-  text: string;
-  timestamp: Date;
-}
+import { TRANSCRIPT_SCROLL_THROTTLE_MS } from '@/lib/chatLimits';
+import { useMiaConversation } from '@/hooks/useMiaConversation';
 
 export default function MiaWidget() {
-  const [statusText, setStatusText] = useState("Let's get going!");
-  const [isMuted, setIsMuted] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const messageIdRef = useRef(0);
+  const { statusText, isMuted, messages, connected, handleClick, toggleMute } = useMiaConversation();
   const prefersReducedMotionRef = useRef(false);
   const scrollThrottleUntilRef = useRef(0);
   const scrollRafRef = useRef<number | null>(null);
   const scratchpadRef = useRef<HTMLDivElement>(null);
-  const agentId = PUBLIC_CONFIG.elevenLabsAgentId;
-
-  const logClientError = useCallback((context: string, err: unknown) => {
-    if (process.env.NODE_ENV !== 'production') {
-      console.error(context, err);
-    }
-  }, []);
-
-  const createMessage = useCallback(
-    (role: Message['role'], text: string): Message => {
-      messageIdRef.current += 1;
-      return {
-        id: `mia-msg-${messageIdRef.current}`,
-        role,
-        text,
-        timestamp: new Date(),
-      };
-    },
-    []
-  );
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
@@ -103,66 +72,10 @@ export default function MiaWidget() {
     };
   }, []);
 
-  const conversation = useConversation({
-    micMuted: isMuted,
-    onConnect: () => {
-      setStatusText('Connected — speak now');
-      messageIdRef.current = 0;
-      setMessages([]);
-    },
-    onDisconnect: () => {
-      setStatusText("Let's get going!");
-    },
-    onError: (err) => {
-      logClientError('ElevenLabs onError:', err);
-      setStatusText('Error — try again');
-    },
-    onMessage: ({ message, role }) => {
-      setMessages((prev) => [
-        ...prev,
-        createMessage(role, message),
-      ].slice(-MAX_TRANSCRIPT_MESSAGES));
-    },
-  });
-
   // Auto-scroll scratchpad
   useEffect(() => {
     scheduleScratchpadScroll(false);
   }, [messages, scheduleScratchpadScroll]);
-
-  const handleClick = useCallback(async () => {
-    try {
-      if (conversation.status === 'connected') {
-        await conversation.endSession();
-      } else {
-        if (!agentId) {
-          setStatusText('Agent not configured');
-          return;
-        }
-
-        setStatusText('Requesting mic...');
-        await navigator.mediaDevices.getUserMedia({ audio: true });
-        setStatusText('Connecting to Mia...');
-        await conversation.startSession({
-          agentId,
-          connectionType: 'websocket',
-        });
-      }
-    } catch (err) {
-      logClientError('Mia session error:', err);
-      setStatusText(
-        err instanceof DOMException && err.name === 'NotAllowedError'
-          ? 'Mic blocked — check permissions'
-          : 'Connection failed — try again'
-      );
-    }
-  }, [agentId, conversation, logClientError]);
-
-  const toggleMute = useCallback(() => {
-    setIsMuted((prev) => !prev);
-  }, []);
-
-  const connected = conversation.status === 'connected';
 
   return (
     <div className={styles['mia-container']}>
