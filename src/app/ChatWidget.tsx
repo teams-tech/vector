@@ -196,12 +196,14 @@ export default function ChatWidget() {
 
       const data: ChatResponsePayload = sanitizeChatResponse(await response.json());
 
-      if (data.session_id && !chatState.sessionId) {
-        setChatState(prev => ({ ...prev, sessionId: data.session_id }));
+      const sessionId = data.session_id;
+      if (typeof sessionId === 'string' && !chatState.sessionId) {
+        setChatState(prev => ({ ...prev, sessionId }));
       }
 
-      if (data.identified && data.identifier) {
-        setChatState(prev => ({ ...prev, identifier: data.identifier }));
+      const identifier = data.identifier;
+      if (data.identified && typeof identifier === 'string') {
+        setChatState(prev => ({ ...prev, identifier }));
       }
 
       if (data.verified !== undefined) {
