@@ -4,11 +4,17 @@ import { callChatUpstream } from '@/lib/chat/upstream';
 import { createTimingBreakdown, respondWithTiming } from '@/lib/chat/response';
 import { hasJsonContentType, parseJsonBody, validateChatRequestPayload } from '@/lib/chat/validation';
 import { SERVER_CONFIG } from '@/lib/config.server';
+import {
+  getPinLockoutStatus,
+  getPinVerificationIdentifier,
+  recordPinVerificationResult,
+} from '@/lib/security/pinLockoutStore';
 
 const REQUEST_TIMEOUT_MS = 12000;
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+const PIN_LOCKED_MESSAGE = 'Too many failed PIN attempts. Please try again later.';
 
 export async function POST(request: NextRequest) {
   const startedAt = performance.now();
@@ -49,6 +55,20 @@ export async function POST(request: NextRequest) {
     return respond({ message: 'Invalid request payload.' }, 400);
   }
   timing.validate = performance.now() - validateStart;
+  const pinIdentifier = getPinVerificationIdentifier(sanitizedRequest);
+
+  if (pinIdentifier) {
+    const lockoutStatus = getPinLockoutStatus(pinIdentifier);
+    if (lockoutStatus.locked) {
+      return respond(
+        {
+          message: PIN_LOCKED_MESSAGE,
+          lockout_seconds_remaining: lockoutStatus.retryAfterSeconds,
+        },
+        423
+      );
+    }
+  }
 
   const upstreamResult = await callChatUpstream(chatUpstreamUrl, sanitizedRequest, REQUEST_TIMEOUT_MS);
   timing.upstream = upstreamResult.upstreamMs;
@@ -56,6 +76,20 @@ export async function POST(request: NextRequest) {
 
   if (!upstreamResult.ok) {
     return respond({ message: upstreamResult.message }, upstreamResult.status);
+  }
+
+  if (pinIdentifier) {
+    const wasSuccessful = upstreamResult.payload.success === true || upstreamResult.payload.verified === true;
+    const lockoutStatus = recordPinVerificationResult(pinIdentifier, wasSuccessful);
+    if (lockoutStatus.locked) {
+      return respond(
+        {
+          message: PIN_LOCKED_MESSAGE,
+          lockout_seconds_remaining: lockoutStatus.retryAfterSeconds,
+        },
+        423
+      );
+    }
   }
 
   return respond(upstreamResult.payload, upstreamResult.status);
