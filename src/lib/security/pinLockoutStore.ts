@@ -31,7 +31,7 @@ function pruneStaleRecords(now: number): void {
     return;
   }
 
-  for (const [key, record] of pinLockoutRecords.entries()) {
+  pinLockoutRecords.forEach((record, key) => {
     const isUnlockedAndOld =
       record.lockoutUntil === 0 && now - record.updatedAt > PIN_LOCKOUT_DURATION_MS;
     const isExpiredLockoutAndOld =
@@ -40,7 +40,7 @@ function pruneStaleRecords(now: number): void {
     if (isUnlockedAndOld || isExpiredLockoutAndOld) {
       pinLockoutRecords.delete(key);
     }
-  }
+  });
 }
 
 function readRecord(identifier: string): PinLockoutRecord | undefined {
