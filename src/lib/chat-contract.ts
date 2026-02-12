@@ -1,7 +1,8 @@
 export const MAX_MESSAGE_LENGTH = 4000;
 export const MAX_IDENTIFIER_LENGTH = 128;
 export const MAX_SESSION_ID_LENGTH = 128;
-export const MAX_PIN_LENGTH = 12;
+export const PIN_LENGTH = 6;
+const PIN_PATTERN = /^\d{6}$/;
 
 export type ChatRequestPayload = {
   session_id?: string | null;
@@ -55,7 +56,7 @@ export function sanitizeChatRequest(payload: unknown): ChatRequestPayload | null
   }
 
   if (payload.pin !== undefined) {
-    if (typeof payload.pin !== 'string' || payload.pin.length === 0 || payload.pin.length > MAX_PIN_LENGTH) {
+    if (typeof payload.pin !== 'string' || !PIN_PATTERN.test(payload.pin)) {
       return null;
     }
     sanitized.pin = payload.pin;
