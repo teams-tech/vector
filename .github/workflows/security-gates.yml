@@ -59,7 +59,7 @@ jobs:
 
       - name: Block verbose client logging statements
         run: |
-          if rg -n "console\.(log|debug|info)\(" src; then
+          if rg -n "console\.(log|debug|info|warn|error)\(" src; then
             echo "Disallowed console logging statements found in src/"
             exit 1
           fi

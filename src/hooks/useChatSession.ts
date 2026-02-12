@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { sanitizeChatResponse, type ChatResponsePayload } from '@/lib/chat-contract';
 import { MAX_TRANSCRIPT_MESSAGES } from '@/lib/chatLimits';
+import { reportClientError } from '@/lib/clientTelemetry';
 
 const CHAT_API_URL = '/api/chat';
 const WELCOME_MESSAGE =
@@ -49,12 +50,6 @@ export function useChatSession(isOpen: boolean): UseChatSessionResult {
   const [showPinInput, setShowPinInput] = useState(false);
   const [pinValue, setPinValue] = useState('');
   const messageIdRef = useRef(0);
-
-  const logClientError = useCallback((context: string, error: unknown) => {
-    if (process.env.NODE_ENV !== 'production') {
-      console.error(context, error);
-    }
-  }, []);
 
   const appendMessage = useCallback((message: ChatMessage) => {
     setMessages((prev) => [...prev, message].slice(-MAX_TRANSCRIPT_MESSAGES));
@@ -129,13 +124,13 @@ export function useChatSession(isOpen: boolean): UseChatSessionResult {
           setShowPinInput(true);
         }
       } catch (error) {
-        logClientError('Chat request failed', error);
+        reportClientError('chat_request_failed', error);
         appendMessage(createMessage('system', 'Connection error. Please check your internet and try again.'));
       } finally {
         setIsLoading(false);
       }
     },
-    [appendMessage, chatState.sessionId, chatState.identifier, createMessage, isLoading, logClientError]
+    [appendMessage, chatState.sessionId, chatState.identifier, createMessage, isLoading]
   );
 
   const verifyPin = useCallback(async () => {
@@ -173,13 +168,13 @@ export function useChatSession(isOpen: boolean): UseChatSessionResult {
         appendMessage(createMessage('system', data.message || 'PIN verification failed. Please try again.'));
       }
     } catch (error) {
-      logClientError('PIN verification failed', error);
+      reportClientError('pin_verification_failed', error);
       appendMessage(createMessage('system', 'Error verifying PIN. Please try again.'));
     } finally {
       setIsLoading(false);
       setPinValue('');
     }
-  }, [appendMessage, pinValue, chatState.sessionId, chatState.identifier, createMessage, logClientError]);
+  }, [appendMessage, pinValue, chatState.sessionId, chatState.identifier, createMessage]);
 
   return {
     messages,
