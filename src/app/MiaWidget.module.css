@@ -1,0 +1,200 @@
+.mia-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.mia-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.mia-ring {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 2px solid #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.mia-btn:hover .mia-ring {
+  border-color: #c41e3a;
+  box-shadow: 0 0 20px rgba(196, 30, 58, 0.15);
+}
+
+.mia-ring-pulse {
+  border-color: #c41e3a !important;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(196, 30, 58, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 0 12px rgba(196, 30, 58, 0);
+  }
+}
+
+.mia-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 200;
+  color: #d4a574;
+  letter-spacing: 1px;
+}
+
+.mia-label {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #555;
+  font-weight: 300;
+  transition: color 0.3s;
+}
+
+.mia-btn:hover .mia-label {
+  color: #888;
+}
+
+.mia-active .mia-label {
+  color: #c41e3a;
+}
+
+.mia-controls {
+  display: flex;
+  gap: 12px;
+}
+
+.mia-control-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid #333;
+  background: #1a1a1a;
+  color: #888;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.mia-control-btn:hover {
+  border-color: #555;
+  color: #fff;
+}
+
+.mia-control-btn.mia-muted {
+  border-color: #c41e3a;
+  color: #c41e3a;
+}
+
+.mia-scratchpad {
+  width: 100%;
+  max-width: 500px;
+  min-height: 200px;
+  max-height: 300px;
+  overflow-y: auto;
+  background: linear-gradient(180deg, #0c0c0c 0%, #111 100%);
+  border: 1px solid #1a1a1a;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.mia-scratchpad-empty {
+  color: #333;
+  text-align: center;
+  font-style: italic;
+  padding: 40px 0;
+}
+
+.mia-message {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mia-message-agent {
+  background: linear-gradient(135deg, #1a1a1a, #222);
+  border-left: 2px solid #d4a574;
+}
+
+.mia-message-user {
+  background: linear-gradient(135deg, #151515, #1a1a1a);
+  border-left: 2px solid #4a6fa5;
+}
+
+.mia-message-role {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.mia-message-agent .mia-message-role {
+  color: #d4a574;
+}
+
+.mia-message-user .mia-message-role {
+  color: #4a6fa5;
+}
+
+.mia-message-text {
+  color: #888;
+  font-weight: 300;
+}
+
+/* Scrollbar styling */
+.mia-scratchpad::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mia-scratchpad::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+.mia-scratchpad::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+
+.mia-scratchpad::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}

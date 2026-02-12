@@ -2,6 +2,7 @@
 
 import { useConversation } from '@elevenlabs/react';
 import { useCallback, useState, useRef, useEffect } from 'react';
+import styles from './MiaWidget.module.css';
 
 interface Message {
   role: 'user' | 'agent';
@@ -85,24 +86,24 @@ export default function MiaWidget() {
   const connected = conversation.status === 'connected';
 
   return (
-    <div className="mia-container">
+    <div className={styles['mia-container']}>
       {/* Main button */}
       <button
         onClick={handleClick}
-        className={`mia-btn ${connected ? 'mia-active' : ''}`}
+        className={`${styles['mia-btn']} ${connected ? styles['mia-active'] : ''}`}
       >
-        <div className={`mia-ring ${connected ? 'mia-ring-pulse' : ''}`}>
-          <div className="mia-avatar">M</div>
+        <div className={`${styles['mia-ring']} ${connected ? styles['mia-ring-pulse'] : ''}`}>
+          <div className={styles['mia-avatar']}>M</div>
         </div>
-        <span className="mia-label">{statusText}</span>
+        <span className={styles['mia-label']}>{statusText}</span>
       </button>
 
       {/* Controls (only show when connected) */}
       {connected && (
-        <div className="mia-controls">
+        <div className={styles['mia-controls']}>
           <button
             onClick={toggleMute}
-            className={`mia-control-btn ${isMuted ? 'mia-muted' : ''}`}
+            className={`${styles['mia-control-btn']} ${isMuted ? styles['mia-muted'] : ''}`}
             title={isMuted ? 'Unmute' : 'Mute'}
           >
             {isMuted ? (
@@ -127,144 +128,23 @@ export default function MiaWidget() {
 
       {/* Scratchpad */}
       {connected && (
-        <div className="mia-scratchpad" ref={scratchpadRef}>
+        <div className={styles['mia-scratchpad']} ref={scratchpadRef}>
           {messages.length === 0 ? (
-            <div className="mia-scratchpad-empty">
+            <div className={styles['mia-scratchpad-empty']}>
               Conversation will appear here...
             </div>
           ) : (
             messages.map((msg, i) => (
-              <div key={i} className={`mia-message mia-message-${msg.role}`}>
-                <span className="mia-message-role">
+              <div key={i} className={`${styles['mia-message']} ${styles[`mia-message-${msg.role}`]}`}>
+                <span className={styles['mia-message-role']}>
                   {msg.role === 'agent' ? 'Mia' : 'You'}
                 </span>
-                <span className="mia-message-text">{msg.text}</span>
+                <span className={styles['mia-message-text']}>{msg.text}</span>
               </div>
             ))
           )}
         </div>
       )}
-
-      <style>{`
-        .mia-container {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 20px;
-        }
-
-        .mia-controls {
-          display: flex;
-          gap: 12px;
-        }
-
-        .mia-control-btn {
-          width: 44px;
-          height: 44px;
-          border-radius: 50%;
-          border: 1px solid #333;
-          background: #1a1a1a;
-          color: #888;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s ease;
-        }
-
-        .mia-control-btn:hover {
-          border-color: #555;
-          color: #fff;
-        }
-
-        .mia-control-btn.mia-muted {
-          border-color: #c41e3a;
-          color: #c41e3a;
-        }
-
-        .mia-scratchpad {
-          width: 100%;
-          max-width: 500px;
-          min-height: 200px;
-          max-height: 300px;
-          overflow-y: auto;
-          background: linear-gradient(180deg, #0c0c0c 0%, #111 100%);
-          border: 1px solid #1a1a1a;
-          border-radius: 8px;
-          padding: 16px;
-          font-size: 13px;
-          line-height: 1.6;
-        }
-
-        .mia-scratchpad-empty {
-          color: #333;
-          text-align: center;
-          font-style: italic;
-          padding: 40px 0;
-        }
-
-        .mia-message {
-          margin-bottom: 12px;
-          padding: 10px 14px;
-          border-radius: 8px;
-          animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(5px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        .mia-message-agent {
-          background: linear-gradient(135deg, #1a1a1a, #222);
-          border-left: 2px solid #d4a574;
-        }
-
-        .mia-message-user {
-          background: linear-gradient(135deg, #151515, #1a1a1a);
-          border-left: 2px solid #4a6fa5;
-        }
-
-        .mia-message-role {
-          display: block;
-          font-size: 10px;
-          font-weight: 500;
-          letter-spacing: 1px;
-          text-transform: uppercase;
-          margin-bottom: 4px;
-        }
-
-        .mia-message-agent .mia-message-role {
-          color: #d4a574;
-        }
-
-        .mia-message-user .mia-message-role {
-          color: #4a6fa5;
-        }
-
-        .mia-message-text {
-          color: #888;
-          font-weight: 300;
-        }
-
-        /* Scrollbar styling */
-        .mia-scratchpad::-webkit-scrollbar {
-          width: 6px;
-        }
-
-        .mia-scratchpad::-webkit-scrollbar-track {
-          background: #0a0a0a;
-        }
-
-        .mia-scratchpad::-webkit-scrollbar-thumb {
-          background: #333;
-          border-radius: 3px;
-        }
-
-        .mia-scratchpad::-webkit-scrollbar-thumb:hover {
-          background: #444;
-        }
-      `}</style>
     </div>
   );
 }
