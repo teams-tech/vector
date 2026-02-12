@@ -55,7 +55,7 @@ export default function Home() {
           <div className={styles.card}>
             <div className={styles['card-accent']} />
             <h3>SALES</h3>
-            <p>Inventory search, vehicle details, lender matching, and customer follow-ups — hands-free.</p>
+            <p>Inventory search, vehicle details, F&amp;I handoff for lender matching, and customer follow-ups — hands-free.</p>
             <span className={styles['card-tag']}>Customer Facing</span>
           </div>
           <div className={styles.card}>
@@ -85,7 +85,7 @@ export default function Home() {
           <div className={styles.card}>
             <div className={styles['card-accent']} />
             <h3>FLOOR PLANS</h3>
-            <p>Balances, curtailments, and payoffs across AFC and NextGear lenders.</p>
+            <p>Balances, curtailments, and payoffs across AFC and NextGear floor plan companies (FPCs).</p>
             <span className={styles['card-tag']}>Financial Data</span>
           </div>
           <div className={styles.card}>
