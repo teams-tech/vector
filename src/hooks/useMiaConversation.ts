@@ -1,7 +1,7 @@
 'use client';
 
 import { useConversation } from '@elevenlabs/react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { MAX_TRANSCRIPT_MESSAGES } from '@/lib/chatLimits';
 import { PUBLIC_CONFIG } from '@/lib/config';
 import { reportClientError } from '@/lib/clientTelemetry';
@@ -28,8 +28,8 @@ export function useMiaConversation(): UseMiaConversationResult {
   const [statusText, setStatusText] = useState(INITIAL_STATUS);
   const [isMuted, setIsMuted] = useState(false);
   const [messages, setMessages] = useState<MiaMessage[]>([]);
+  const [agentId, setAgentId] = useState<string | null>(PUBLIC_CONFIG.elevenLabsAgentId);
   const messageIdRef = useRef(0);
-  const agentId = PUBLIC_CONFIG.elevenLabsAgentId;
 
   const createMessage = useCallback((role: MiaMessage['role'], text: string): MiaMessage => {
     messageIdRef.current += 1;
@@ -60,6 +60,53 @@ export function useMiaConversation(): UseMiaConversationResult {
     },
   });
 
+  useEffect(() => {
+    if (agentId) {
+      return;
+    }
+
+    let isActive = true;
+    const controller = new AbortController();
+
+    const loadRuntimeConfig = async () => {
+      try {
+        const response = await fetch('/api/public-config', {
+          method: 'GET',
+          credentials: 'same-origin',
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as { elevenLabsAgentId?: unknown };
+        if (!isActive || typeof payload.elevenLabsAgentId !== 'string') {
+          return;
+        }
+
+        const normalizedAgentId = payload.elevenLabsAgentId.trim();
+        if (normalizedAgentId.length > 0) {
+          setAgentId(normalizedAgentId);
+        }
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return;
+        }
+
+        reportClientError('public_config_fetch_failed', error);
+      }
+    };
+
+    void loadRuntimeConfig();
+
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
+  }, [agentId]);
+
   const handleClick = useCallback(async () => {
     try {
       if (conversation.status === 'connected') {
@@ -71,7 +118,8 @@ export function useMiaConversation(): UseMiaConversationResult {
         }
 
         setStatusText('Requesting mic...');
-        await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((track) => track.stop());
         setStatusText('Connecting to Mia...');
         await conversation.startSession({
           agentId,
@@ -80,10 +128,18 @@ export function useMiaConversation(): UseMiaConversationResult {
       }
     } catch (err) {
       reportClientError('mia_session_error', err);
+      const errorMessage = err instanceof Error ? err.message.toLowerCase() : '';
+      const looksLikeAgentConfigIssue =
+        errorMessage.includes('agent')
+        || errorMessage.includes('unauthorized')
+        || errorMessage.includes('forbidden');
+
       setStatusText(
         err instanceof DOMException && err.name === 'NotAllowedError'
           ? 'Mic blocked — check permissions'
-          : 'Connection failed — try again'
+          : looksLikeAgentConfigIssue
+            ? 'Agent unavailable — verify configuration'
+            : 'Connection failed — try again'
       );
     }
   }, [agentId, conversation]);
